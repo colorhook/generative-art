@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Generative Art - ProcessingJS</title>
+<link  href="http://k.kbcdn.com/min/f=/k2/css/reset-1-0-1.css,/k2/css/color-1-0-2.css,/k2/css/common-1-0-1.css,/k2/css/grids-1-0-0.css" type="text/css" rel="stylesheet">
+<style>
+body{
+	text-align:left;
+	background:#333;
+}
+.k2-w12{
+	padding:20px;
+	position:relative;
+	z-index:100;
+	background:#f2f2f2;
+	height:100%;
+}
+.k2-w12 h3{
+	font-weight:bold;
+	font-size:12px;
+	color:#999;
+	border:#666 1px dashed;
+	padding:4px;
+	margin-bottom:10px;
+}
+.k2-w33{
+	position:fixed;
+	margin-left:360px;
+	padding-top:50px;
+}
+#header{
+	position:fixed;
+	height:40px;
+	width:950px;
+}
+a.active-item:link,
+a.active-item:visited
+{
+	color:#a11111;
+	font-weight:bold;
+}
+</style>
+</head>
+<body>
+	<div class="k2-single k2-w48">
+		<div id="header"></div>
+		<div class="k2-w12">
+			<h3>来自<a href="http://abandonedart.org" target="_blank">AbandonedArt.org</a></h3>
+			<ul id="thirdParty"></ul>
+		</div>
+		<div class="k2-w33 k2-last">
+			<div id="canvasContainer">
+				<canvas id="processing-canvas"></canvas>
+			</div>
+		</div>
+	</div>
+<script src="processing-1.2.3.js"  charset="utf-8"></script>
+<script src="raphael.js"  charset="utf-8"></script>
+<script src="processing-collection.js" charset="utf-8"></script>
+<script src="http://k.kbcdn.com/k2/seed/seed-1-3-12.js" charset="utf-8"></script>
+<script>
+(function(){
+	var r = new Raphael("header", "100%", 40);
+	var label = r.text(486, 20, "Processing.js examples").attr({"font-size": '24px', "fill":'#fff'});
+	var anim = function(){
+		label.animate({'fill': Raphael.getColor()}, 5000, anim);
+	}
+	anim();
+})();
+YUI().use('node-base', 'event-delegate', 'io-base', function(Y){
+	var PC = PROCESSING_COLLECTION,
+		thirdWork = PC.thirdWork,
+		ioTask,
+		node,
+		currentName,
+		loadPDE,
+		menuHtml = "",
+		processing,
+		doProcessing,
+		activeItem,
+		pool = {};
+
+	for(var i = 0, l = thirdWork.length; i < l; i++){
+		var item = thirdWork[i], 
+			name = item.name,
+			src = item.src || item.name + ".pde";
+		menuHtml += "<li><a href=\""+src+"\">"+name+"</a></li>";
+	}
+	//
+	node = Y.one("#thirdParty");
+	loadPDE = function(src){
+		if(pool[src]){
+			doProcessing(pool[src]);
+		}else{
+			currentName = src;
+			ioTask = Y.io(src);
+		}
+	};
+	doProcessing = function(text){
+		if(processing){
+			processing.exit();
+			processing = null;
+		}
+		canvasContainer = Y.one("#canvasContainer");
+		var innerHTML = canvasContainer.getContent();
+		canvasContainer.setContent(innerHTML);
+		canvas = document.getElementById("processing-canvas");
+		processing = new Processing(canvas, text);
+	};
+
+	Y.on("io:success", function(id, o){
+		ioTask = null;
+		pool[currentName] = o.responseText;
+		doProcessing(o.responseText);
+	});
+	node.setContent(menuHtml);
+	Y.delegate("click", function(e){
+		e.halt();
+		if(ioTask){
+			ioTask.abort();
+			ioTask = null;
+		}
+		if(activeItem){
+			activeItem.removeClass('active-item');
+		}
+		activeItem = e.target;
+		activeItem.addClass('active-item');
+		loadPDE(activeItem.getAttribute('href'));
+	}, node, 'a');
+});
+</script>
+</body>
+</html>
